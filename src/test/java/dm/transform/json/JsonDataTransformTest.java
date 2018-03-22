@@ -20,6 +20,7 @@ import static org.junit.Assert.assertThat;
 import dm.transform.DataTransform;
 import dm.transform.DataTransformFactory;
 import dm.transform.constants.TransformType;
+import dm.transform.util.JsonDataUtils;
 
 /**
  * 
@@ -59,7 +60,7 @@ public class JsonDataTransformTest {
 	public void testTransform() {
 		DataTransform transform = DataTransformFactory.getDataTransform(TransformType.JSON, specFile.getAbsolutePath());
 		
-		Object input = JsonUtils.jsonToMap( "{\n" + 
+		Object input = JsonDataUtils.jsonToMap( "{\n" + 
         		"    \"rating\": {\n" + 
         		"        \"primary\": {\n" + 
         		"            \"value\": 3\n" + 
@@ -69,6 +70,7 @@ public class JsonDataTransformTest {
         		"        }\n" + 
         		"    }\n" + 
         		"}" );
+
 		Object output = transform.transform(input);
 		assertThat(output, instanceOf(Map.class));
 		
