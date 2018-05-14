@@ -1,0 +1,72 @@
+{
+  "trigger": {
+    "schedule": {
+      "interval": "1m"
+    }
+  },
+  "input": {
+    "search": {
+      "request": {
+        "search_type": "query_then_fetch",
+        "indices": [
+          "logstash-test"
+        ],
+        "types": [],
+        "body": {
+          "query": {
+            "bool": {
+              "must": [
+                {
+                  "query_string": {
+                    "query": "*:*"
+                  }
+                },
+                {
+                  "range": {
+                    "@timestamp": {
+                      "gte": "now-120m"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "aggs": {
+            "range": {
+              "date_range": {
+                "field": "@timestamp",
+                "ranges": [
+                  {
+                    "key": "LAST_60",
+                    "from": "now-120m",
+                    "to": "now"
+                  },
+                  {
+                    "key": "BEFORE_60",
+                    "from": "now-180m",
+                    "to": "now-120m"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "condition": {
+    "script": {
+      "source": "boolean last60Minute = false; boolean before60Minute = false; for ( int i=0;i<ctx.payload.aggregations.range.buckets.length;i++) { if ( ctx.payload.aggregations.range.buckets[i].key == 'LAST_60' && ctx.payload.aggregations.range.buckets[i].doc_count > 0 ) { last60Minute = true; } if ( ctx.payload.aggregations.range.buckets[i].key == 'BEFORE_60' && ctx.payload.aggregations.range.buckets[i].doc_count == 0 ) { before60Minute = true; } } return last60Minute && before60Minute;",
+      "lang": "painless"
+    }
+  },
+  "actions": {
+    "log": {
+      "logging": {
+        "level": "info",
+        "text": "{{ctx.payload.hits.total}} {{ctx.payload.aggregations.range.buckets.1.doc_count}} Errors have occured in the logs:{{#ctx.payload.hits.hits}}{{_id}}:{{/ctx.payload.hits.hits}}"
+      }
+    }
+  },
+  "throttle_period_in_millis": 900000
+}
